@@ -26,11 +26,14 @@ int bedroku_scroll = 0;
 int rgblamp_selected = 0;
 int rgblamp_scroll = 0;
 
+int bedfan_selected = 0;
+int bedfan_scroll = 0;
+
 bool bedroku_control_mode = false;
 
 // Device Information
-const int num_devices = 4;
-const char devices[4][12] PROGMEM = {"Candles", "Bed Roku", "Bedroom TV", "RGB Lamp"};
+const int num_devices = 5;
+const char devices[5][12] PROGMEM = {"Candles", "Bed Roku", "Bed Fan", "Bedroom TV", "RGB Lamp"};
 
 const int num_candles_options = 6;
 const char candles_options[6][12] PROGMEM = {"On", "Off", "4H", "8H", "Multi", "-Colors"};
@@ -50,6 +53,10 @@ const char bedroku_options[3][12] PROGMEM = {"-Control", "Home", "Back"};
 const int num_rgblamp_options = 3;
 const char rgblamp_options[3][12] PROGMEM = {"On", "Off", "White"};
 const long int rgblamp_ir_codes[3] PROGMEM = {0xFFE01F, 0xFF609F, 0xFFD02F};
+
+const int num_bedfan_options = 5;
+const char bedfan_options[5][12] PROGMEM = {"Power", "Speed", "Timer", "Rotation", "Wind Type"};
+const long int bedfan_ir_codes[5] PROGMEM = {0x1FE58A7, 0x1FE807F, 0x1FEE01F, 0x1FEC03F, 0x1FE906F}; 
 
 // Joystick values
 int xval = 500;
@@ -94,9 +101,12 @@ void loop() {
       bedroku_handler();
       break;
     case 3:
-      bedtv_handler();
+      bedfan_handler();
       break;
     case 4:
+      bedtv_handler();
+      break;
+    case 5:
       rgblamp_handler();
       break;
   }
@@ -112,7 +122,7 @@ int get_joystick_action() {
 
   if (xval < 100) {
     return DOWN;
-  } else if (xval > 900) {
+  } else if (xval > 650) {
     return UP;
   } else if (yval > 900) {
     return RIGHT;
@@ -373,6 +383,38 @@ void rgblamp_handler() {
   }
 
   draw_basic_menu("RGB Lamp:", rgblamp_options, num_rgblamp_options, rgblamp_selected, rgblamp_scroll);
+
+  // Delay if there was input
+  if (is_input) {
+    delay(300);
+  }
+}
+
+void bedfan_handler() {
+  int joystick_action = get_joystick_action();
+  bool is_input = false;
+
+  if (joystick_action != 0) {
+    is_input = true;
+  }
+
+  if (joystick_action == DOWN && bedfan_selected + 1 < num_bedfan_options) {
+    if (bedfan_selected > 0) {
+      ++bedfan_scroll;
+    }
+    ++bedfan_selected;
+  } else if (joystick_action == UP && bedfan_selected > 0) {
+    if (bedfan_selected > 1) {
+      --bedfan_scroll;
+    }
+    --bedfan_selected;
+  } else if (joystick_action == PRESS) {
+    irsend.sendNECMSB(pgm_read_dword(bedfan_ir_codes + bedfan_selected), 32);
+  } else if (joystick_action == LEFT) {
+    selected = 0;
+  }
+
+  draw_basic_menu("Bedroom Fan:", bedfan_options, num_bedfan_options, bedfan_selected, bedfan_scroll);
 
   // Delay if there was input
   if (is_input) {
